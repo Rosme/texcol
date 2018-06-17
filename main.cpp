@@ -20,7 +20,9 @@ std::string convertPath(const std::string& path) {
 class ImguiWindow {
 public:
 	ImguiWindow() 
-		: m_render(false) {}
+		: m_render(false)
+		, m_isNewColorSet(false)
+	{}
 
 	void toggleRendering() {
 		m_render = !m_render;
@@ -47,6 +49,8 @@ public:
 			m_newColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
 
 			sf::err() << "Applying new color: " << m_newColor << std::endl;
+
+			m_isNewColorSet = true;
 		}
 
 		ImGui::End();
@@ -58,12 +62,29 @@ public:
 		m_texture.loadFromImage(m_image);
 	}
 
+	bool isNewColorSet() const {
+		return m_isNewColorSet;
+	}
+
+	sf::Color getNewColor() const {
+		return m_newColor;
+	}
+
+	sf::Color getPickedColor() const {
+		return m_imagePickedColor;
+	}
+
+	void newColorSetted() {
+		m_isNewColorSet = false;
+	}
+
 private:
 	bool m_render;
 	sf::Color m_imagePickedColor;
 	sf::Image m_image;
 	sf::Texture m_texture;
 	sf::Color m_newColor;
+	bool m_isNewColorSet;
 };
 
 int main(int argc, char* argv[]) {
@@ -87,7 +108,7 @@ int main(int argc, char* argv[]) {
 	ImGui::SFML::Init(window);
 	
 	ImguiWindow imguiWindow;
-	
+
 	sf::Clock deltaClock;
 	while (window.isOpen()) {
 		sf::Event event;
@@ -106,6 +127,8 @@ int main(int argc, char* argv[]) {
 				case sf::Keyboard::F1:
 					imguiWindow.toggleRendering();
 					break;
+				default:
+					break;
 				}
 			}
 
@@ -121,6 +144,28 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		ImGui::SFML::Update(window, deltaClock.restart());
+
+		if(imguiWindow.isNewColorSet()) {
+			
+			auto textureImage = texture.copyToImage();
+			auto newColor = imguiWindow.getNewColor();
+			auto pickedColor = imguiWindow.getPickedColor();
+
+			for(auto i = 0u; i < size.x; ++i) {
+				for(auto j = 0u; j < size.y; ++j) {
+					if(textureImage.getPixel(i, j) == pickedColor) {
+						textureImage.setPixel(i, j, newColor);
+					}
+				}
+			}
+
+			if(!texture.loadFromImage(textureImage)) {
+				sf::err() << "Couldn't reload texture from image" << std::endl;
+			}
+			sprite.setTexture(texture);
+
+			imguiWindow.newColorSetted();
+		}
 
 		imguiWindow.render();
 
