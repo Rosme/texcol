@@ -33,8 +33,7 @@ public:
 
 		static float color[3] { 0.f, 0.f, 0.f };
 
-		ImGui::Begin("Color Control");
-
+		ImGui::Begin("Color Control", 0, ImGuiWindowFlags_AlwaysAutoResize);
 
 		ImGui::Text("Image Picked Color");
 		ImGui::Image(m_texture);
@@ -51,7 +50,6 @@ public:
 		}
 
 		ImGui::End();
-
 	}
 
 	void setImagePickedColor(const sf::Color imagePickedColor) {
@@ -59,9 +57,6 @@ public:
 		m_image.create(24, 24, m_imagePickedColor);
 		m_texture.loadFromImage(m_image);
 	}
-
-private:
-
 
 private:
 	bool m_render;
@@ -73,6 +68,7 @@ private:
 
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
+		sf::err() << "Require image path passed as argument" << std::endl;
 		return -1;
 	}
 
@@ -80,6 +76,7 @@ int main(int argc, char* argv[]) {
 
 	sf::Texture texture;
 	if (!texture.loadFromFile(imagePath)) {
+		sf::err() << "Couldn't load image" << std::endl;
 		return -2;
 	}
 	auto size = texture.getSize();
@@ -115,7 +112,9 @@ int main(int argc, char* argv[]) {
 			if (event.type == sf::Event::MouseButtonReleased) {
 				const sf::Vector2u pos(event.mouseButton.x, event.mouseButton.y);
 				if(pos.x >= size.x/2 && pos.x <= size.x + size.x/2
-					&& pos.y >= size.y/2 && pos.y <= size.y + size.y/2) {
+					&& pos.y >= size.y/2 && pos.y <= size.y + size.y/2
+					&& !ImGui::IsAnyWindowHovered()
+					&& !ImGui::IsAnyItemActive()) {
 
 					imguiWindow.setImagePickedColor(texture.copyToImage().getPixel(event.mouseButton.x - (size.x/2), event.mouseButton.y - (size.y/2)));
 				}
