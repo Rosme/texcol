@@ -5,18 +5,22 @@
 #include <imgui.h>
 #include <imgui-SFML.h>
 
-const std::string convertPath(const std::string& path) {
+std::ostream& operator<<(std::ostream& out, const sf::Color& color) {
+	out << "R: " << static_cast<int>(color.r) << " G: " << static_cast<int>(color.g) << " B: " << static_cast<int>(color.b);
+	return out;
+}
+
+std::string convertPath(const std::string& path) {
 	std::string imagePath = path;
 	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
 
 	return imagePath;
 }
 
-class ImGuiWindow {
+class ImguiWindow {
 public:
-	ImGuiWindow() 
-		: m_render(false)
-	{}
+	ImguiWindow() 
+		: m_render(false) {}
 
 	void toggleRendering() {
 		m_render = !m_render;
@@ -27,14 +31,44 @@ public:
 			return;
 		}
 
-		ImGui::Begin("Hello, world!");
-		ImGui::Button("Look at this pretty button");
+		static float color[3] { 0.f, 0.f, 0.f };
+
+		ImGui::Begin("Color Control");
+
+
+		ImGui::Text("Image Picked Color");
+		ImGui::Image(m_texture);
+		ImGui::Separator();
+		ImGui::Text("New Color");
+		ImGui::ColorEdit3("Pick New Color", color);
+
+		if(ImGui::Button("Apply new color")) {
+			m_newColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
+			m_newColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
+			m_newColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
+
+			sf::err() << "Applying new color: " << m_newColor << std::endl;
+		}
+
 		ImGui::End();
 
 	}
 
+	void setImagePickedColor(const sf::Color imagePickedColor) {
+		m_imagePickedColor = imagePickedColor;
+		m_image.create(24, 24, m_imagePickedColor);
+		m_texture.loadFromImage(m_image);
+	}
+
+private:
+
+
 private:
 	bool m_render;
+	sf::Color m_imagePickedColor;
+	sf::Image m_image;
+	sf::Texture m_texture;
+	sf::Color m_newColor;
 };
 
 int main(int argc, char* argv[]) {
@@ -50,11 +84,12 @@ int main(int argc, char* argv[]) {
 	}
 	auto size = texture.getSize();
 	sf::Sprite sprite(texture);
+	sprite.setPosition(size.x / 2, size.y / 2);
 
-	sf::RenderWindow window(sf::VideoMode(size.x, size.y, 32), "TexCol");
+	sf::RenderWindow window(sf::VideoMode(size.x*2, size.y*2, 32), "TexCol");
 	ImGui::SFML::Init(window);
 	
-	ImGuiWindow imguiWindow;
+	ImguiWindow imguiWindow;
 	
 	sf::Clock deltaClock;
 	while (window.isOpen()) {
@@ -74,6 +109,15 @@ int main(int argc, char* argv[]) {
 				case sf::Keyboard::F1:
 					imguiWindow.toggleRendering();
 					break;
+				}
+			}
+
+			if (event.type == sf::Event::MouseButtonReleased) {
+				const sf::Vector2u pos(event.mouseButton.x, event.mouseButton.y);
+				if(pos.x >= size.x/2 && pos.x <= size.x + size.x/2
+					&& pos.y >= size.y/2 && pos.y <= size.y + size.y/2) {
+
+					imguiWindow.setImagePickedColor(texture.copyToImage().getPixel(event.mouseButton.x - (size.x/2), event.mouseButton.y - (size.y/2)));
 				}
 			}
 		}
