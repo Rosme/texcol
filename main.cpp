@@ -1,9 +1,14 @@
 #include <string>
 #include <algorithm>
+#include <chrono>
+#include <ctime>
+#include <functional>
 #include <SFML/Graphics.hpp>
 
 #include <imgui.h>
 #include <imgui-SFML.h>
+
+
 
 std::ostream& operator<<(std::ostream& out, const sf::Color& color) {
 	out << "R: " << static_cast<int>(color.r) << " G: " << static_cast<int>(color.g) << " B: " << static_cast<int>(color.b);
@@ -53,6 +58,14 @@ public:
 			m_isNewColorSet = true;
 		}
 
+		if(ImGui::Button("Save To File")) {
+			if(!m_saveFunction()) {
+				sf::err() << "Failed to save image" << std::endl;
+			} else {
+				sf::err() << "Image has been saved" << std::endl;
+			}
+		}
+
 		ImGui::End();
 	}
 
@@ -78,6 +91,10 @@ public:
 		m_isNewColorSet = false;
 	}
 
+	void setSaveFunction(const std::function<bool()>& saveFunction) {
+		m_saveFunction = saveFunction;
+	}
+
 private:
 	bool m_render;
 	sf::Color m_imagePickedColor;
@@ -85,6 +102,7 @@ private:
 	sf::Texture m_texture;
 	sf::Color m_newColor;
 	bool m_isNewColorSet;
+	std::function<bool()> m_saveFunction;
 };
 
 int main(int argc, char* argv[]) {
@@ -100,6 +118,7 @@ int main(int argc, char* argv[]) {
 		sf::err() << "Couldn't load image" << std::endl;
 		return -2;
 	}
+	sf::err() << imagePath << " loaded" << std::endl;
 	auto size = texture.getSize();
 	sf::Sprite sprite(texture);
 	sprite.setPosition(size.x / 2, size.y / 2);
@@ -110,6 +129,27 @@ int main(int argc, char* argv[]) {
 	ImguiWindow imguiWindow;
 
 	sf::Clock deltaClock;
+
+	auto saveFunction = [&texture, &imagePath]() {
+		const auto index = imagePath.find_last_of('.');
+
+		if (index != std::string::npos) {
+
+			const auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+			const auto localtime = std::localtime(&now);
+			auto sub = imagePath.substr(0, index);
+			sub += '-';
+			sub += std::to_string(localtime->tm_hour) + "-";
+			sub += std::to_string(localtime->tm_min) + "-";
+			sub += std::to_string(localtime->tm_sec);
+			sub += imagePath.substr(index);
+
+			return texture.copyToImage().saveToFile(sub);
+		}
+		return false;
+	};
+
+	imguiWindow.setSaveFunction(saveFunction);
 	while (window.isOpen()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
@@ -127,6 +167,13 @@ int main(int argc, char* argv[]) {
 				case sf::Keyboard::F1:
 					imguiWindow.toggleRendering();
 					break;
+				case sf::Keyboard::S:
+					if (!saveFunction()) {
+						sf::err() << "Failed to save image" << std::endl;
+					}
+					else {
+						sf::err() << "Image has been saved" << std::endl;
+					}
 				default:
 					break;
 				}
@@ -174,7 +221,6 @@ int main(int argc, char* argv[]) {
 		ImGui::SFML::Render(window);
 		window.display();
 	}
-
 
 	ImGui::SFML::Shutdown();
 
