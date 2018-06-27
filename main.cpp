@@ -112,6 +112,8 @@ public:
 
 	void apply(const sf::RenderTexture& input, sf::RenderTarget& output) {
 		m_shader.setParameter("source", input.getTexture());
+		m_shader.setUniform("toreplace", sf::Glsl::Vec4(m_colorToReplace));
+		m_shader.setUniform("newcolor", sf::Glsl::Vec4(m_newColor));
 
 		sf::Vector2f outputSize = static_cast<sf::Vector2f>(output.getSize());
 
@@ -128,7 +130,14 @@ public:
 		output.draw(vertices, states);
 	}
 
+	void setColors(const sf::Color toReplace, const sf::Color newColor) {
+		m_colorToReplace = toReplace;
+		m_newColor = newColor;
+	}
+
 private:
+	sf::Color m_colorToReplace;
+	sf::Color m_newColor;
 	sf::Shader m_shader;
 	std::string fullpassVert = R"(
 void main()
@@ -139,10 +148,17 @@ void main()
 )";
 	std::string brightnessFrag = R"(
 uniform sampler2D source;
+uniform vec4 toreplace;
+uniform vec4 newcolor;
 
 void main()
 {
-	gl_FragColor = texture2D(source, gl_TexCoord[0].xy);
+	vec4 color = texture2D(source, gl_TexCoord[0].xy);
+	if(color.r == toreplace.r && color.g == toreplace.g && color.b == toreplace.b) {
+		gl_FragColor = newcolor;
+	} else {
+		gl_FragColor = color;
+	}
 }
 )";
 };
@@ -179,7 +195,7 @@ int main(int argc, char* argv[]) {
 
 	sf::Clock deltaClock;
 
-	auto saveFunction = [&texture, &imagePath]() {
+	auto saveFunction = [&renderTextureWithShader, &imagePath]() {
 		const auto index = imagePath.find_last_of('.');
 
 		if (index != std::string::npos) {
@@ -193,7 +209,7 @@ int main(int argc, char* argv[]) {
 			sub += std::to_string(localtime->tm_sec);
 			sub += imagePath.substr(index);
 
-			return texture.copyToImage().saveToFile(sub);
+			return renderTextureWithShader.getTexture().copyToImage().saveToFile(sub);
 		}
 		return false;
 	};
@@ -247,18 +263,7 @@ int main(int argc, char* argv[]) {
 			auto newColor = imguiWindow.getNewColor();
 			auto pickedColor = imguiWindow.getPickedColor();
 
-			for(auto i = 0u; i < size.x; ++i) {
-				for(auto j = 0u; j < size.y; ++j) {
-					if(textureImage.getPixel(i, j) == pickedColor) {
-						textureImage.setPixel(i, j, newColor);
-					}
-				}
-			}
-
-			if(!texture.loadFromImage(textureImage)) {
-				sf::err() << "Couldn't reload texture from image" << std::endl;
-			}
-			sprite.setTexture(texture);
+			textureColorEffect.setColors(pickedColor, newColor);
 
 			imguiWindow.newColorSetted();
 		}
