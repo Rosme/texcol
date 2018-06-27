@@ -8,8 +8,6 @@
 #include <imgui.h>
 #include <imgui-SFML.h>
 
-
-
 std::ostream& operator<<(std::ostream& out, const sf::Color& color) {
 	out << "R: " << static_cast<int>(color.r) << " G: " << static_cast<int>(color.g) << " B: " << static_cast<int>(color.b);
 	return out;
@@ -105,6 +103,50 @@ private:
 	std::function<bool()> m_saveFunction;
 };
 
+class TextureColorEffect {
+
+public:
+	TextureColorEffect() {
+		m_shader.loadFromMemory(fullpassVert, brightnessFrag);
+	}
+
+	void apply(const sf::RenderTexture& input, sf::RenderTarget& output) {
+		m_shader.setParameter("source", input.getTexture());
+
+		sf::Vector2f outputSize = static_cast<sf::Vector2f>(output.getSize());
+
+		sf::VertexArray vertices(sf::TrianglesStrip, 4);
+		vertices[0] = sf::Vertex(sf::Vector2f(0, 0), sf::Vector2f(0, 1));
+		vertices[1] = sf::Vertex(sf::Vector2f(outputSize.x, 0), sf::Vector2f(1, 1));
+		vertices[2] = sf::Vertex(sf::Vector2f(0, outputSize.y), sf::Vector2f(0, 0));
+		vertices[3] = sf::Vertex(sf::Vector2f(outputSize), sf::Vector2f(1, 0));
+
+		sf::RenderStates states;
+		states.shader = &m_shader;
+		states.blendMode = sf::BlendNone;
+
+		output.draw(vertices, states);
+	}
+
+private:
+	sf::Shader m_shader;
+	std::string fullpassVert = R"(
+void main()
+{
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	gl_TexCoord[0] = gl_MultiTexCoord0;
+}
+)";
+	std::string brightnessFrag = R"(
+uniform sampler2D source;
+
+void main()
+{
+	gl_FragColor = texture2D(source, gl_TexCoord[0].xy);
+}
+)";
+};
+
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
 		sf::err() << "Require image path passed as argument" << std::endl;
@@ -125,7 +167,14 @@ int main(int argc, char* argv[]) {
 
 	sf::RenderWindow window(sf::VideoMode(size.x*2, size.y*2, 32), "TexCol");
 	ImGui::SFML::Init(window);
-	
+	sf::RenderTexture renderTexture;
+	renderTexture.create(window.getSize().x, window.getSize().y);
+
+	sf::RenderTexture renderTextureWithShader;
+	renderTextureWithShader.create(renderTexture.getSize().x, renderTexture.getSize().y);
+
+	TextureColorEffect textureColorEffect;
+
 	ImguiWindow imguiWindow;
 
 	sf::Clock deltaClock;
@@ -216,8 +265,16 @@ int main(int argc, char* argv[]) {
 
 		imguiWindow.render();
 
+		renderTexture.clear();
+		renderTexture.draw(sprite);
+		renderTexture.display();
+
+		renderTextureWithShader.clear();
+		textureColorEffect.apply(renderTexture, renderTextureWithShader);
+		renderTextureWithShader.display();
+
 		window.clear();
-		window.draw(sprite);
+		window.draw(sf::Sprite(renderTextureWithShader.getTexture()));
 		ImGui::SFML::Render(window);
 		window.display();
 	}
