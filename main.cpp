@@ -20,11 +20,76 @@ std::string convertPath(const std::string& path) {
 	return imagePath;
 }
 
+class TextureColorEffect {
+public:
+	TextureColorEffect() {
+		m_shader.loadFromMemory(fullpassVert, brightnessFrag);
+	}
+
+	void apply(const sf::RenderTexture& input, sf::RenderTarget& output) {
+		m_shader.setParameter("source", input.getTexture());
+		m_shader.setUniform("toreplace", sf::Glsl::Vec4(m_colorToReplace));
+		m_shader.setUniform("newcolor", sf::Glsl::Vec4(m_newColor));
+
+		const sf::Vector2f outputSize = static_cast<sf::Vector2f>(output.getSize());
+
+		sf::VertexArray vertices(sf::TrianglesStrip, 4);
+		vertices[0] = sf::Vertex(sf::Vector2f(0, 0), sf::Vector2f(0, 1));
+		vertices[1] = sf::Vertex(sf::Vector2f(outputSize.x, 0), sf::Vector2f(1, 1));
+		vertices[2] = sf::Vertex(sf::Vector2f(0, outputSize.y), sf::Vector2f(0, 0));
+		vertices[3] = sf::Vertex(sf::Vector2f(outputSize), sf::Vector2f(1, 0));
+
+		sf::RenderStates states;
+		states.shader = &m_shader;
+		states.blendMode = sf::BlendNone;
+
+		output.draw(vertices, states);
+	}
+
+	void setColors(const sf::Color toReplace, const sf::Color newColor) {
+		m_colorToReplace = toReplace;
+		m_newColor = newColor;
+	}
+
+	void resetColor() {
+		m_colorToReplace = sf::Color();
+		m_newColor = sf::Color();
+	}
+
+private:
+	sf::Color m_colorToReplace;
+	sf::Color m_newColor;
+	sf::Shader m_shader;
+	const std::string fullpassVert = R"(
+void main()
+{
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	gl_TexCoord[0] = gl_MultiTexCoord0;
+}
+)";
+	const std::string brightnessFrag = R"(
+uniform sampler2D source;
+uniform vec4 toreplace;
+uniform vec4 newcolor;
+
+void main()
+{
+	vec4 color = texture2D(source, gl_TexCoord[0].xy);
+	if(color.r == toreplace.r && color.g == toreplace.g && color.b == toreplace.b) {
+		gl_FragColor = newcolor;
+	} else {
+		gl_FragColor = color;
+	}
+}
+)";
+};
+
 class ImguiWindow {
 public:
-	ImguiWindow() 
+	ImguiWindow(TextureColorEffect& textureColorEffect)
 		: m_render(false)
 		, m_isNewColorSet(false)
+		, m_textureColorEffect(textureColorEffect)
 	{}
 
 	void toggleRendering() {
@@ -53,8 +118,14 @@ public:
 
 			sf::err() << "Applying new color: " << m_newColor << std::endl;
 
-			m_isNewColorSet = true;
+			m_textureColorEffect.setColors(m_imagePickedColor, m_newColor);
 		}
+
+		if(ImGui::Button("Reset Colors")) {
+			m_textureColorEffect.resetColor();
+		}
+
+		ImGui::Separator();
 
 		if(ImGui::Button("Save To File")) {
 			if(!m_saveFunction()) {
@@ -101,66 +172,7 @@ private:
 	sf::Color m_newColor;
 	bool m_isNewColorSet;
 	std::function<bool()> m_saveFunction;
-};
-
-class TextureColorEffect {
-
-public:
-	TextureColorEffect() {
-		m_shader.loadFromMemory(fullpassVert, brightnessFrag);
-	}
-
-	void apply(const sf::RenderTexture& input, sf::RenderTarget& output) {
-		m_shader.setParameter("source", input.getTexture());
-		m_shader.setUniform("toreplace", sf::Glsl::Vec4(m_colorToReplace));
-		m_shader.setUniform("newcolor", sf::Glsl::Vec4(m_newColor));
-
-		sf::Vector2f outputSize = static_cast<sf::Vector2f>(output.getSize());
-
-		sf::VertexArray vertices(sf::TrianglesStrip, 4);
-		vertices[0] = sf::Vertex(sf::Vector2f(0, 0), sf::Vector2f(0, 1));
-		vertices[1] = sf::Vertex(sf::Vector2f(outputSize.x, 0), sf::Vector2f(1, 1));
-		vertices[2] = sf::Vertex(sf::Vector2f(0, outputSize.y), sf::Vector2f(0, 0));
-		vertices[3] = sf::Vertex(sf::Vector2f(outputSize), sf::Vector2f(1, 0));
-
-		sf::RenderStates states;
-		states.shader = &m_shader;
-		states.blendMode = sf::BlendNone;
-
-		output.draw(vertices, states);
-	}
-
-	void setColors(const sf::Color toReplace, const sf::Color newColor) {
-		m_colorToReplace = toReplace;
-		m_newColor = newColor;
-	}
-
-private:
-	sf::Color m_colorToReplace;
-	sf::Color m_newColor;
-	sf::Shader m_shader;
-	std::string fullpassVert = R"(
-void main()
-{
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-}
-)";
-	std::string brightnessFrag = R"(
-uniform sampler2D source;
-uniform vec4 toreplace;
-uniform vec4 newcolor;
-
-void main()
-{
-	vec4 color = texture2D(source, gl_TexCoord[0].xy);
-	if(color.r == toreplace.r && color.g == toreplace.g && color.b == toreplace.b) {
-		gl_FragColor = newcolor;
-	} else {
-		gl_FragColor = color;
-	}
-}
-)";
+	TextureColorEffect& m_textureColorEffect;
 };
 
 int main(int argc, char* argv[]) {
@@ -191,7 +203,7 @@ int main(int argc, char* argv[]) {
 
 	TextureColorEffect textureColorEffect;
 
-	ImguiWindow imguiWindow;
+	ImguiWindow imguiWindow(textureColorEffect);
 
 	sf::Clock deltaClock;
 
@@ -232,13 +244,6 @@ int main(int argc, char* argv[]) {
 				case sf::Keyboard::F1:
 					imguiWindow.toggleRendering();
 					break;
-				case sf::Keyboard::S:
-					if (!saveFunction()) {
-						sf::err() << "Failed to save image" << std::endl;
-					}
-					else {
-						sf::err() << "Image has been saved" << std::endl;
-					}
 				default:
 					break;
 				}
@@ -256,17 +261,6 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		ImGui::SFML::Update(window, deltaClock.restart());
-
-		if(imguiWindow.isNewColorSet()) {
-			
-			auto textureImage = texture.copyToImage();
-			auto newColor = imguiWindow.getNewColor();
-			auto pickedColor = imguiWindow.getPickedColor();
-
-			textureColorEffect.setColors(pickedColor, newColor);
-
-			imguiWindow.newColorSetted();
-		}
 
 		imguiWindow.render();
 
