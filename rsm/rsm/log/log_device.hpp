@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2018 Jean-Sébastien Fauteux
+* Copyright (c) 2017 Jean-Sébastien Fauteux
 *
 * This software is provided 'as-is', without any express or implied warranty.
 * In no event will the authors be held liable for any damages arising from
@@ -20,44 +20,49 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
+#pragma once
+
+#include <memory>
 #include <string>
-#include <algorithm>
-#include <functional>
-#include <imgui-SFML.h>
-#include <rsm/log/logger.hpp>
-#include <rsm/log/stream_log_device.hpp>
 
-#include "texcol.hpp"
+namespace rsm {
+	
+	enum class LogLevel {
+		None,
+		Debug,
+		Info,
+		Warning,
+		Critical,
+		Error
+	};
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
-
-	return imagePath;
-}
-
-int main(int argc, char* argv[]) {
-	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
-
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
-	}
-
-	const std::string imagePath = convertPath(argv[1]);
-
-	try {
-		TexCol texcol(imagePath);
-
-		while (texcol.isRunning()) {
-			texcol.update();
-			texcol.render();
+	inline std::string logLevelToString(LogLevel level) {
+		switch (level) {
+		case LogLevel::Debug:
+			return "Debug";
+		case LogLevel::Info:
+			return "Info";
+		case LogLevel::Warning:
+			return "Warning";
+		case LogLevel::Critical:
+			return "Critical";
+		case LogLevel::Error:
+			return "Error";
+		default:
+			return "None";
 		}
-	} catch(const std::exception& e) {
-		rsm::Logger::error(e.what());
 	}
 
-	ImGui::SFML::Shutdown();
+	class LogDevice {
+	public:
+		virtual ~LogDevice() = default;
+		using Ptr = std::unique_ptr<LogDevice>;
 
-	return 0;
+
+		virtual void log(LogLevel level, const std::string& message) = 0;
+
+	protected:
+		LogDevice() = default;
+	};
+
 }

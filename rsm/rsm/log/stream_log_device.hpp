@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2018 Jean-Sébastien Fauteux
+* Copyright (c) 2017 Jean-Sébastien Fauteux
 *
 * This software is provided 'as-is', without any express or implied warranty.
 * In no event will the authors be held liable for any damages arising from
@@ -20,44 +20,19 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <string>
-#include <algorithm>
-#include <functional>
-#include <imgui-SFML.h>
-#include <rsm/log/logger.hpp>
-#include <rsm/log/stream_log_device.hpp>
+#pragma once
 
-#include "texcol.hpp"
+#include <rsm/log/log_device.hpp>
+#include <iostream>
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
-
-	return imagePath;
-}
-
-int main(int argc, char* argv[]) {
-	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
-
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
-	}
-
-	const std::string imagePath = convertPath(argv[1]);
-
-	try {
-		TexCol texcol(imagePath);
-
-		while (texcol.isRunning()) {
-			texcol.update();
-			texcol.render();
+namespace rsm {
+	
+	class StreamLogDevice
+		: public LogDevice {
+	public:
+		void log(LogLevel level, const std::string& message) override {
+			std::cout << "[" << logLevelToString(level) << "]" << message << "\n";
 		}
-	} catch(const std::exception& e) {
-		rsm::Logger::error(e.what());
-	}
+	};
 
-	ImGui::SFML::Shutdown();
-
-	return 0;
 }

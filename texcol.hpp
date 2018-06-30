@@ -20,44 +20,35 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
+#pragma once
+
 #include <string>
-#include <algorithm>
-#include <functional>
-#include <imgui-SFML.h>
-#include <rsm/log/logger.hpp>
-#include <rsm/log/stream_log_device.hpp>
 
-#include "texcol.hpp"
+#include <SFML/Graphics.hpp>
+#include <rsm/msg/message_handler.hpp>
+#include <rsm/msg/message_dispatcher.hpp>
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
+#include "shadereffect.hpp"
+#include "controlwindow.hpp"
 
-	return imagePath;
-}
+class TexCol 
+	: public rsm::MessageHandler {
+public:
+	TexCol(const std::string& imagePath);
 
-int main(int argc, char* argv[]) {
-	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
+	bool isRunning() const;
+	void update();
+	void render();
 
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
-	}
-
-	const std::string imagePath = convertPath(argv[1]);
-
-	try {
-		TexCol texcol(imagePath);
-
-		while (texcol.isRunning()) {
-			texcol.update();
-			texcol.render();
-		}
-	} catch(const std::exception& e) {
-		rsm::Logger::error(e.what());
-	}
-
-	ImGui::SFML::Shutdown();
-
-	return 0;
-}
+	void onMessage(const std::string& key, const rsm::Message& message) override;
+private:
+	const std::string& m_imagePath;
+	sf::RenderWindow m_window;
+	sf::Texture m_texture;
+	sf::Clock m_imguiClock;
+	sf::RenderTexture m_renderTexturePreShader;
+	sf::RenderTexture m_renderTexturePostShader;
+	rsm::MessageDispatcher m_dispatcher;
+	ShaderEffect m_shader;
+	ControlWindow m_controlWindow;
+};

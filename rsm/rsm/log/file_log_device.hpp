@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2018 Jean-Sébastien Fauteux
+* Copyright (c) 2017 Jean-Sébastien Fauteux
 *
 * This software is provided 'as-is', without any express or implied warranty.
 * In no event will the authors be held liable for any damages arising from
@@ -20,44 +20,31 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <string>
-#include <algorithm>
-#include <functional>
-#include <imgui-SFML.h>
-#include <rsm/log/logger.hpp>
-#include <rsm/log/stream_log_device.hpp>
+#pragma once
 
-#include "texcol.hpp"
+#include <rsm/log/log_device.hpp>
+#include <fstream>
+#include <stdexcept>
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
+namespace rsm {
+	
+	class FileLogDevice
+		: public LogDevice {
 
-	return imagePath;
-}
-
-int main(int argc, char* argv[]) {
-	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
-
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
-	}
-
-	const std::string imagePath = convertPath(argv[1]);
-
-	try {
-		TexCol texcol(imagePath);
-
-		while (texcol.isRunning()) {
-			texcol.update();
-			texcol.render();
+	public:
+		FileLogDevice(const std::string& fileName) {
+			m_file.open(fileName, std::ios::out | std::ios::trunc);
+			if(!m_file.is_open()) {
+				throw std::runtime_error("Impossible to create the log file");
+			}
 		}
-	} catch(const std::exception& e) {
-		rsm::Logger::error(e.what());
-	}
 
-	ImGui::SFML::Shutdown();
+		void log(LogLevel level, const std::string& message) override {
+			m_file << "[" << logLevelToString(level) << "]" << message << "\n";
+		}
 
-	return 0;
+	private:
+		std::ofstream m_file;
+	};
+
 }

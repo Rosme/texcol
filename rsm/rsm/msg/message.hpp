@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2018 Jean-Sébastien Fauteux
+* Copyright (c) 2017 Jean-Sébastien Fauteux
 *
 * This software is provided 'as-is', without any express or implied warranty.
 * In no event will the authors be held liable for any damages arising from
@@ -20,44 +20,30 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
+#pragma once
+
+#include <rsm/any.hpp>
 #include <string>
-#include <algorithm>
-#include <functional>
-#include <imgui-SFML.h>
-#include <rsm/log/logger.hpp>
-#include <rsm/log/stream_log_device.hpp>
 
-#include "texcol.hpp"
+namespace rsm {
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
+    class Message {
+    public:
+        Message() {}
 
-	return imagePath;
-}
+        template<class T>
+        Message(T t)
+            : m_content(t) {}
 
-int main(int argc, char* argv[]) {
-	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
+        Message(const char* content)
+            : m_content(std::string(content)) {}
 
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
-	}
+        const rsm::Any& getContent() const {
+            return m_content;
+        }
 
-	const std::string imagePath = convertPath(argv[1]);
+    private:
+        rsm::Any m_content;
+    };
 
-	try {
-		TexCol texcol(imagePath);
-
-		while (texcol.isRunning()) {
-			texcol.update();
-			texcol.render();
-		}
-	} catch(const std::exception& e) {
-		rsm::Logger::error(e.what());
-	}
-
-	ImGui::SFML::Shutdown();
-
-	return 0;
 }

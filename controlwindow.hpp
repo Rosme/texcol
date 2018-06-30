@@ -20,44 +20,38 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <string>
-#include <algorithm>
-#include <functional>
+#pragma once
+
+#include <imgui.h>
 #include <imgui-SFML.h>
-#include <rsm/log/logger.hpp>
-#include <rsm/log/stream_log_device.hpp>
+#include <SFML/Graphics.hpp>
+#include <rsm/msg/message_dispatcher.hpp>
 
-#include "texcol.hpp"
+class ControlWindow {
+public:
+	ControlWindow(rsm::MessageDispatcher& dispatcher);
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
+	void toggleRendering();
 
-	return imagePath;
-}
+	void render();
 
-int main(int argc, char* argv[]) {
-	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
+	void setImagePickedColor(const sf::Color imagePickedColor);
 
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
-	}
+	bool isNewColorSet() const;
 
-	const std::string imagePath = convertPath(argv[1]);
+	sf::Color getNewColor() const;
 
-	try {
-		TexCol texcol(imagePath);
+	sf::Color getPickedColor() const;
 
-		while (texcol.isRunning()) {
-			texcol.update();
-			texcol.render();
-		}
-	} catch(const std::exception& e) {
-		rsm::Logger::error(e.what());
-	}
+	void newColorSetted();
 
-	ImGui::SFML::Shutdown();
-
-	return 0;
-}
+private:
+	bool m_render;
+	sf::Color m_imagePickedColor;
+	sf::Image m_image;
+	sf::Texture m_texture;
+	sf::Color m_newColor;
+	bool m_isNewColorSet;
+	//TextureColorEffect& m_textureColorEffect;
+	rsm::MessageDispatcher& m_dispatcher;
+};

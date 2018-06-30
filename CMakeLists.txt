@@ -6,9 +6,18 @@ SET(SFML_DIR ${SFML_CMAKE_PATH})
 
 include_directories(imgui)
 include_directories(imgui-sfml)
+include_directories(rsm)
 
 set(SRC 
+	#Code
     main.cpp
+	texcol.hpp
+	texcol.cpp
+	shadereffect.hpp
+	shadereffect.cpp
+	controlwindow.hpp
+	controlwindow.cpp
+	#Imgui
     imgui/imgui.cpp
     imgui/imgui_draw.cpp
     imgui-sfml/imgui-SFML.cpp
