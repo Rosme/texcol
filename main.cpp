@@ -26,25 +26,18 @@
 #include <imgui-SFML.h>
 #include <rsm/log/logger.hpp>
 #include <rsm/log/stream_log_device.hpp>
+#include <rsm/log/file_log_device.hpp>
 
 #include "texcol.hpp"
 
-std::string convertPath(const std::string& path) {
-	std::string imagePath = path;
-	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
-
-	return imagePath;
-}
-
 int main(int argc, char* argv[]) {
 	rsm::Logger::addLogDevice(std::make_unique<rsm::StreamLogDevice>());
+	rsm::Logger::addLogDevice(std::make_unique<rsm::FileLogDevice>("log.txt"));
 
-	if (argc == 1) {
-		rsm::Logger::error("Require image path passed as argument");
-		return -1;
+	std::string imagePath;
+	if (argc > 1) {
+		imagePath = argv[1];
 	}
-
-	const std::string imagePath = convertPath(argv[1]);
 
 	try {
 		TexCol texcol(imagePath);
@@ -53,11 +46,11 @@ int main(int argc, char* argv[]) {
 			texcol.update();
 			texcol.render();
 		}
+
+		ImGui::SFML::Shutdown();
 	} catch(const std::exception& e) {
 		rsm::Logger::error(e.what());
 	}
-
-	ImGui::SFML::Shutdown();
 
 	return 0;
 }

@@ -54,4 +54,5 @@ private:
 	bool m_isNewColorSet;
 	//TextureColorEffect& m_textureColorEffect;
 	rsm::MessageDispatcher& m_dispatcher;
+	char m_imagePathBuffer[256]= "";
 };

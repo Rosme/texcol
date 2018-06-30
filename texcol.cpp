@@ -31,31 +31,18 @@
 #include <rsm/log/logger.hpp>
 
 TexCol::TexCol(const std::string& imagePath)
-	: m_imagePath(imagePath)
+	: m_imagePath(convertPath(imagePath))
 	, m_controlWindow(m_dispatcher)
 {
-	if(!m_texture.loadFromFile(imagePath)) {
-		throw std::runtime_error("Couldn't load image");
-	}
-
-	std::ostringstream sstr;
-	sstr << imagePath << " loaded";
-	rsm::Logger::debug(sstr.str());
-
-	auto size = m_texture.getSize();
-
-	m_window.create(sf::VideoMode(size.x * 2, size.y * 2, 32), "TexCol");
-	ImGui::SFML::Init(m_window);
-
-	m_renderTexturePreShader.create(m_window.getSize().x, m_window.getSize().y);
-	m_renderTexturePostShader.create(m_renderTexturePreShader.getSize().x, m_renderTexturePreShader.getSize().y);
-
 	m_dispatcher.registerHandler("close", *this);
 	m_dispatcher.registerHandler("save", *this);
 	m_dispatcher.registerHandler("reset_colors", *this);
 	m_dispatcher.registerHandler("toggle_control_window", *this);
 	m_dispatcher.registerHandler("new_color", *this);
 	m_dispatcher.registerHandler("replacement_color", *this);
+	m_dispatcher.registerHandler("new_image", *this);
+
+	reload();
 }
 
 bool TexCol::isRunning() const
@@ -171,4 +158,37 @@ void TexCol::onMessage(const std::string& key, const rsm::Message& message)
 	if(key == "new_color") {
 		m_shader.setNewColor(message.getContent().get<sf::Color>());
 	}
+
+	if(key == "new_image") {
+		m_imagePath = convertPath(message.getContent().get<char*>());
+		reload();
+	}
+}
+
+void TexCol::reload() {
+	if (!m_imagePath.empty() && !m_texture.loadFromFile(m_imagePath)) {
+		throw std::runtime_error("Couldn't load image " + m_imagePath);
+	}
+
+	std::ostringstream sstr;
+	sstr << m_imagePath << " loaded";
+	rsm::Logger::debug(sstr.str());
+
+	const auto size = m_texture.getSize();
+
+	if(!m_window.isOpen()) {
+		if(m_imagePath.empty()) {
+			m_window.create(sf::VideoMode(500, 500, 32), "TexCol");
+			m_dispatcher.pushMessage("toggle_control_window");
+		} else {
+			m_window.create(sf::VideoMode(size.x * 2, size.y * 2, 32), "TexCol");
+		}
+
+		ImGui::SFML::Init(m_window);
+	} else {
+		m_window.create(sf::VideoMode(size.x * 2, size.y * 2, 32), "TexCol");
+	}
+
+	m_renderTexturePreShader.create(m_window.getSize().x, m_window.getSize().y);
+	m_renderTexturePostShader.create(m_renderTexturePreShader.getSize().x, m_renderTexturePreShader.getSize().y);
 }

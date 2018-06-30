@@ -66,6 +66,13 @@ void ControlWindow::render() {
 		m_dispatcher.pushMessage("save");
 	}
 
+	ImGui::Separator();
+
+	ImGui::InputText("New Image Path", m_imagePathBuffer, 256);
+	if(ImGui::Button("Load New Image")) {
+		m_dispatcher.pushMessage("new_image", m_imagePathBuffer);
+	}
+
 	ImGui::End();
 }
 

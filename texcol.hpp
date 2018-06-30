@@ -40,9 +40,12 @@ public:
 	void update();
 	void render();
 
-	void onMessage(const std::string& key, const rsm::Message& message) override;
 private:
-	const std::string& m_imagePath;
+	void onMessage(const std::string& key, const rsm::Message& message) override;
+	void reload();
+
+private:
+	std::string m_imagePath;
 	sf::RenderWindow m_window;
 	sf::Texture m_texture;
 	sf::Clock m_imguiClock;
@@ -52,3 +55,10 @@ private:
 	ShaderEffect m_shader;
 	ControlWindow m_controlWindow;
 };
+
+inline std::string convertPath(const std::string& path) {
+	std::string imagePath = path;
+	std::replace(imagePath.begin(), imagePath.end(), '\\', '/');
+
+	return imagePath;
+}
