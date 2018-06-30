@@ -41,6 +41,7 @@ TexCol::TexCol(const std::string& imagePath)
 	m_dispatcher.registerHandler("new_color", *this);
 	m_dispatcher.registerHandler("replacement_color", *this);
 	m_dispatcher.registerHandler("new_image", *this);
+	m_dispatcher.registerHandler("background_color", *this);
 
 	reload();
 }
@@ -107,7 +108,7 @@ void TexCol::render()
 	sf::Sprite postShaderSprite(m_renderTexturePostShader.getTexture());
 	postShaderSprite.setPosition(size.x / 2.f, size.y / 2.f);
 
-	m_window.clear();
+	m_window.clear(m_backgroundColor);
 	m_window.draw(postShaderSprite);
 	ImGui::SFML::Render(m_window);
 	m_window.display();
@@ -163,6 +164,10 @@ void TexCol::onMessage(const std::string& key, const rsm::Message& message)
 	if(key == "new_image") {
 		m_imagePath = convertPath(message.getContent().get<char*>());
 		reload();
+	}
+
+	if(key == "background_color") {
+		m_backgroundColor = message.getContent().get<sf::Color>();
 	}
 }
 

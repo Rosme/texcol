@@ -37,7 +37,7 @@ void ControlWindow::render() {
 		return;
 	}
 
-	static float color[3]{ 0.f, 0.f, 0.f };
+	static float newColor[3]{ 0.f, 0.f, 0.f };
 
 	ImGui::Begin("Color Control", 0, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -45,15 +45,15 @@ void ControlWindow::render() {
 	ImGui::Image(m_texture);
 	ImGui::Separator();
 	ImGui::Text("New Color");
-	ImGui::ColorEdit3("Pick New Color", color);
+	ImGui::ColorEdit3("Pick New Color", newColor);
 
 	if (ImGui::Button("Apply new color")) {
-		m_newColor.r = static_cast<sf::Uint8>(color[0] * 255.f);
-		m_newColor.g = static_cast<sf::Uint8>(color[1] * 255.f);
-		m_newColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
+		m_newColor.r = static_cast<sf::Uint8>(newColor[0] * 255.f);
+		m_newColor.g = static_cast<sf::Uint8>(newColor[1] * 255.f);
+		m_newColor.b = static_cast<sf::Uint8>(newColor[2] * 255.f);
 
-		m_dispatcher.pushMessage("replacement_color", rsm::Message(m_imagePickedColor));
-		m_dispatcher.pushMessage("new_color", rsm::Message(m_newColor));
+		m_dispatcher.pushMessage("replacement_color", m_imagePickedColor);
+		m_dispatcher.pushMessage("new_color", m_newColor);
 	}
 
 	if (ImGui::Button("Reset Colors")) {
@@ -71,6 +71,19 @@ void ControlWindow::render() {
 	ImGui::InputText("New Image Path", m_imagePathBuffer, 256);
 	if(ImGui::Button("Load New Image")) {
 		m_dispatcher.pushMessage("new_image", m_imagePathBuffer);
+	}
+
+	ImGui::Separator();
+
+	static float backgroundColor[3]{ 0.f, 0.f, 0.f };
+	ImGui::ColorEdit3("Pick Background Color", backgroundColor);
+	if(ImGui::Button("Change Background Color")) {
+		sf::Color newBackgroundColor;
+		newBackgroundColor.r = static_cast<sf::Uint8>(backgroundColor[0] * 255.f);
+		newBackgroundColor.g = static_cast<sf::Uint8>(backgroundColor[1] * 255.f);
+		newBackgroundColor.b = static_cast<sf::Uint8>(backgroundColor[2] * 255.f);
+
+		m_dispatcher.pushMessage("background_color", newBackgroundColor);
 	}
 
 	ImGui::End();

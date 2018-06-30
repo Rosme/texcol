@@ -54,6 +54,7 @@ private:
 	rsm::MessageDispatcher m_dispatcher;
 	ShaderEffect m_shader;
 	ControlWindow m_controlWindow;
+	sf::Color m_backgroundColor;
 };
 
 inline std::string convertPath(const std::string& path) {
