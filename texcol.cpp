@@ -95,19 +95,20 @@ void TexCol::render()
 {
 	m_controlWindow.render();
 
-	const auto size = m_texture.getSize();
-	sf::Sprite sprite(m_texture);
-	sprite.setPosition(size.x / 2.f, size.y / 2.f);
-	m_renderTexturePreShader.clear();
-	m_renderTexturePreShader.draw(sprite);
+	m_renderTexturePreShader.clear(sf::Color::Transparent);
+	m_renderTexturePreShader.draw(sf::Sprite(m_texture));
 	m_renderTexturePreShader.display();
 
-	m_renderTexturePostShader.clear();
+	m_renderTexturePostShader.clear(sf::Color::Transparent);
 	m_shader.apply(m_renderTexturePreShader, m_renderTexturePostShader);
 	m_renderTexturePostShader.display();
 
+	const auto size = m_texture.getSize();
+	sf::Sprite postShaderSprite(m_renderTexturePostShader.getTexture());
+	postShaderSprite.setPosition(size.x / 2.f, size.y / 2.f);
+
 	m_window.clear();
-	m_window.draw(sf::Sprite(m_renderTexturePostShader.getTexture()));
+	m_window.draw(postShaderSprite);
 	ImGui::SFML::Render(m_window);
 	m_window.display();
 }
@@ -190,6 +191,6 @@ void TexCol::reload() {
 	}
 
 	m_window.setFramerateLimit(60);
-	m_renderTexturePreShader.create(m_window.getSize().x, m_window.getSize().y);
-	m_renderTexturePostShader.create(m_renderTexturePreShader.getSize().x, m_renderTexturePreShader.getSize().y);
+	m_renderTexturePreShader.create(size.x, size.y);
+	m_renderTexturePostShader.create(size.x, size.y);
 }
