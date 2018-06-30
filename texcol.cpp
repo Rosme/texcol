@@ -189,6 +189,7 @@ void TexCol::reload() {
 		m_window.create(sf::VideoMode(size.x * 2, size.y * 2, 32), "TexCol");
 	}
 
+	m_window.setFramerateLimit(60);
 	m_renderTexturePreShader.create(m_window.getSize().x, m_window.getSize().y);
 	m_renderTexturePostShader.create(m_renderTexturePreShader.getSize().x, m_renderTexturePreShader.getSize().y);
 }
