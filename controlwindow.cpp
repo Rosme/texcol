@@ -25,8 +25,9 @@
 ControlWindow::ControlWindow(rsm::MessageDispatcher& dispatcher)
 	: m_render(false)
 	, m_isNewColorSet(false)
-	, m_dispatcher(dispatcher)
-{}
+	, m_dispatcher(dispatcher) {
+	setImagePickedColor(sf::Color::Black);
+}
 
 void ControlWindow::toggleRendering() {
 	m_render = !m_render;
@@ -40,6 +41,17 @@ void ControlWindow::render() {
 	static float newColor[3]{ 0.f, 0.f, 0.f };
 
 	ImGui::Begin("Color Control", 0, ImGuiWindowFlags_AlwaysAutoResize);
+
+	ImGui::InputText("New Image Path", m_imagePathBuffer, 256);
+	if (ImGui::Button("Load New Image")) {
+		m_dispatcher.pushMessage("new_image", m_imagePathBuffer);
+	}
+
+	if (ImGui::Button("Save To File")) {
+		m_dispatcher.pushMessage("save");
+	}
+
+	ImGui::Separator();
 
 	ImGui::Text("Image Picked Color");
 	ImGui::Image(m_texture);
@@ -58,19 +70,6 @@ void ControlWindow::render() {
 
 	if (ImGui::Button("Reset Colors")) {
 		m_dispatcher.pushMessage("reset_colors");
-	}
-
-	ImGui::Separator();
-
-	if (ImGui::Button("Save To File")) {
-		m_dispatcher.pushMessage("save");
-	}
-
-	ImGui::Separator();
-
-	ImGui::InputText("New Image Path", m_imagePathBuffer, 256);
-	if(ImGui::Button("Load New Image")) {
-		m_dispatcher.pushMessage("new_image", m_imagePathBuffer);
 	}
 
 	ImGui::Separator();
