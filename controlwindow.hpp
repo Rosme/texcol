@@ -46,13 +46,15 @@ public:
 	void newColorSetted();
 
 private:
+	std::string openFileDialog();
+
+private:
 	bool m_render;
 	sf::Color m_imagePickedColor;
 	sf::Image m_image;
 	sf::Texture m_texture;
 	sf::Color m_newColor;
 	bool m_isNewColorSet;
-	//TextureColorEffect& m_textureColorEffect;
 	rsm::MessageDispatcher& m_dispatcher;
-	char m_imagePathBuffer[256]= "";
+	char m_imagePathBuffer[260]= "";
 };

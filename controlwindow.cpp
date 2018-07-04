@@ -22,6 +22,15 @@
 
 #include "controlwindow.hpp"
 
+#include <sstream>
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+
+#include <rsm/log/logger.hpp>
+
 ControlWindow::ControlWindow(rsm::MessageDispatcher& dispatcher)
 	: m_render(false)
 	, m_isNewColorSet(false)
@@ -41,6 +50,13 @@ void ControlWindow::render() {
 	static float newColor[3]{ 0.f, 0.f, 0.f };
 
 	ImGui::Begin("Color Control", 0, ImGuiWindowFlags_AlwaysAutoResize);
+
+#if defined(_WIN32)
+	if (ImGui::Button("Browse")) {
+		auto newPath = openFileDialog();
+		sprintf(m_imagePathBuffer, newPath.c_str());
+	}
+#endif
 
 	ImGui::InputText("New Image Path", m_imagePathBuffer, 256);
 	if (ImGui::Button("Load New Image")) {
@@ -108,4 +124,31 @@ sf::Color ControlWindow::getPickedColor() const {
 
 void ControlWindow::newColorSetted() {
 	m_isNewColorSet = false;
+}
+
+std::string ControlWindow::openFileDialog() {
+	std::string path;
+
+#if defined(_WIN32)
+	char filename[MAX_PATH];
+
+	OPENFILENAME ofn;
+	ZeroMemory(&filename, sizeof(filename));
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.lpstrFilter = "Images\0*.*\0";
+	ofn.lpstrFile = filename;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrTitle = "Select new images";
+	ofn.Flags = OFN_DONTADDTORECENT | OFN_FILEMUSTEXIST;
+
+	if (GetOpenFileNameA(&ofn))
+	{
+		path = filename;
+		return path;
+	}
+#endif
+
+	return path;
 }
