@@ -30,6 +30,8 @@
 #include <imgui-SFML.h>
 #include <rsm/log/logger.hpp>
 
+#include "sansation.hpp"
+
 TexCol::TexCol(const std::string& imagePath)
 	: m_imagePath(convertPath(imagePath))
 	, m_controlWindow(m_dispatcher)
@@ -42,6 +44,15 @@ TexCol::TexCol(const std::string& imagePath)
 	m_dispatcher.registerHandler("replacement_color", *this);
 	m_dispatcher.registerHandler("new_image", *this);
 	m_dispatcher.registerHandler("background_color", *this);
+
+	if(!m_pressF1Font.loadFromMemory(sansation_ttf, sansation_ttf_len)) {
+		rsm::Logger::error("Couldn't load sansation font");
+	}
+
+	m_pressF1Text.setString("Press F1 for Control Window");
+	m_pressF1Text.setFont(m_pressF1Font);
+	m_pressF1Text.setFillColor(sf::Color::White);
+	m_pressF1Text.setCharacterSize(12);
 
 	reload();
 }
@@ -110,6 +121,7 @@ void TexCol::render()
 
 	m_window.clear(m_backgroundColor);
 	m_window.draw(postShaderSprite);
+	m_window.draw(m_pressF1Text);
 	ImGui::SFML::Render(m_window);
 	m_window.display();
 }
@@ -195,6 +207,7 @@ void TexCol::reload() {
 		m_window.create(sf::VideoMode(size.x * 2, size.y * 2, 32), "TexCol");
 	}
 
+	m_pressF1Text.setPosition(20, m_window.getSize().y - 30);
 	m_window.setFramerateLimit(60);
 	m_renderTexturePreShader.create(size.x, size.y);
 	m_renderTexturePostShader.create(size.x, size.y);

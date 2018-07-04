@@ -21,7 +21,6 @@
 */
 
 #include <string>
-#include <algorithm>
 #include <functional>
 #include <imgui-SFML.h>
 #include <rsm/log/logger.hpp>

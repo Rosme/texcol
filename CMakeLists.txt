@@ -17,6 +17,7 @@ set(SRC
 	shadereffect.cpp
 	controlwindow.hpp
 	controlwindow.cpp
+	sansation.hpp
 	#Imgui
     imgui/imgui.cpp
     imgui/imgui_draw.cpp

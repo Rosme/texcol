@@ -55,6 +55,8 @@ private:
 	ShaderEffect m_shader;
 	ControlWindow m_controlWindow;
 	sf::Color m_backgroundColor;
+	sf::Font m_pressF1Font;
+	sf::Text m_pressF1Text;
 };
 
 inline std::string convertPath(const std::string& path) {
